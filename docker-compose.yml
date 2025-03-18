@@ -1,0 +1,56 @@
+version: '3'
+
+services:
+  laravel:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+    container_name: produto-search-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+    networks:
+      - produto-search-network
+    depends_on:
+      - mysql
+
+  nginx:
+    image: nginx:alpine
+    container_name: produto-search-nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www
+      - ./.docker/nginx:/etc/nginx/conf.d/
+    networks:
+      - produto-search-network
+    depends_on:
+      - laravel
+
+  mysql:
+    image: mysql:8.0
+    container_name: produto-search-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: produto_search
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: password
+      MYSQL_USER: sail
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    ports:
+      - "3307:3306"  # Alterado para 3307 para evitar conflitos
+    volumes:
+      - produto-search-mysql:/var/lib/mysql
+    networks:
+      - produto-search-network
+
+networks:
+  produto-search-network:
+    driver: bridge
+
+volumes:
+  produto-search-mysql:
+    driver: local
